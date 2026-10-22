@@ -93,7 +93,7 @@ int main (int argc, char** argv)
         cc (3, 74, 0);
         cc (2, 101, 0); cc (2, 100, 0); cc (2, 6, 12);                  // rango do bend da canle 2
         const bool ok = std::abs (m.bendSemitonos (3) - 22.0) < 1e-9 && std::abs (m.bendSemitonos (1) + 2.0) < 1e-9
-                        && m.presion (3) == 1.0 && m.timbre (3) == 0.0 && m.timbre (5) == 0.5 && m.rangoBend (2) == 12;
+                        && juce::exactlyEqual (m.presion (3), 1.0) && juce::exactlyEqual (m.timbre (3), 0.0) && juce::exactlyEqual (m.timbre (5), 0.5) && m.rangoBend (2) == 12;
         proba ("MIDI: MPE (bend por canle e mestra, presión, CC74, RPN)", antes && activo && ok);
     }
     // ---- o teito
@@ -105,13 +105,14 @@ int main (int argc, char** argv)
         const double baixo = q.procesar (0.5);
         double l = 3.0, r = -1.5; Teito e; e.preparar (44100.0); e.procesar (l, r);
         proba ("teito: nunca pasa de −1 dBFS e non toca o que vai baixo",
-               maxi <= 0.891 + 1e-12 && baixo == 0.5 && std::abs (l - 0.891) < 1e-12 && std::abs (r + 0.4455) < 1e-12);
+               maxi <= 0.891 + 1e-12 && juce::exactlyEqual (baixo, 0.5) && std::abs (l - 0.891) < 1e-12 && std::abs (r + 0.4455) < 1e-12);
     }
     // ---- presets propios, A/B e desfacer
     {
         struct Proc : juce::AudioProcessor
         {
             Proc() : juce::AudioProcessor (BusesProperties()), apvts (*this, &undo, "P", capa()) {}
+            using juce::AudioProcessor::processBlock;
             static juce::AudioProcessorValueTreeState::ParameterLayout capa()
             {
                 juce::AudioProcessorValueTreeState::ParameterLayout l;
