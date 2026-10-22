@@ -43,6 +43,29 @@ int main (int argc, char** argv)
                && textoDeBytes (longo, sizeof (longo)).length() == 2 && textoDeBytes (nullptr, 5).isEmpty());
     }
     {
+        // o texto dunha elección que chega byte a byte (coma desde CLAP) volve á mesma opción
+        const juce::StringArray opcions { "Poly 1", U ("Unísono"), U ("−"), "4'" };
+        juce::AudioParameterChoice eleccion (juce::ParameterID { "modo", 1 }, "Modo", opcions, 0, atributosEleccion (opcions));
+        juce::RangedAudioParameter& p = eleccion;   // (getValueForText é público só na base)
+        auto bytes = [] (const juce::String& t)
+        {
+            juce::String b;
+            for (const char* c = t.toRawUTF8(); *c != 0; ++c) b += juce::String::charToString ((juce::juce_wchar) (uint8_t) *c);
+            return b;
+        };
+        bool ok = true;
+        for (int i = 0; i < opcions.size(); ++i)
+        {
+            const float v = p.convertTo0to1 ((float) i);
+            ok = ok && std::abs (p.getValueForText (bytes (opcions[i])) - v) < 1.0e-6f
+                    && std::abs (p.getValueForText (opcions[i]) - v) < 1.0e-6f;
+        }
+        ok = ok && std::abs (p.getValueForText (U ("unísono")) - p.convertTo0to1 (1.0f)) < 1.0e-6f
+                && std::abs (p.getValueForText ("3") - p.convertTo0to1 (3.0f)) < 1.0e-6f
+                && textoDoDAW (U ("Latin-1 xa ben: ó")) == U ("Latin-1 xa ben: ó");
+        proba ("eleccións: o texto do DAW byte a byte (CLAP)", ok);
+    }
+    {
         const auto f = juce::File::createTempFile (".txt");
         f.replaceWithData ("Mi \xE9 a nota", 11);
         const bool ok = lerTexto (f) == U ("Mi é a nota") && lerTexto (f, 4).isEmpty() && lerTexto (f.getSiblingFile ("non-existe.txt")).isEmpty();

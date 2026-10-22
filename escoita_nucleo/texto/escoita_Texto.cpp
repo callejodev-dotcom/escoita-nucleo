@@ -57,4 +57,28 @@ juce::String lerTexto (const juce::File& f, juce::int64 maximo)
     if (! f.loadFileAsData (mb)) return {};
     return textoDeBytes (mb.getData(), mb.getSize());
 }
+
+juce::String textoDoDAW (const juce::String& t)
+{
+    std::string bytes;
+    bool alto = false;
+    for (auto c : t)
+    {
+        if (c > 0xff) return t;   // xa son caracteres de verdade
+        alto = alto || c >= 0x80;
+        bytes.push_back ((char) c);
+    }
+    return alto ? textoDeBytes (bytes.data(), bytes.size()) : t;
+}
+
+juce::AudioParameterChoiceAttributes atributosEleccion (const juce::StringArray& opcions)
+{
+    return juce::AudioParameterChoiceAttributes().withValueFromStringFunction ([opcions] (const juce::String& t)
+    {
+        const auto r = textoDoDAW (t).trim();
+        for (int i = 0; i < opcions.size(); ++i)
+            if (opcions[i].equalsIgnoreCase (r)) return i;
+        return juce::jlimit (0, opcions.size() - 1, r.getIntValue());
+    });
+}
 }
