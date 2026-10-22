@@ -1,4 +1,4 @@
-// Barullo Tune — números aleatorios iguais en todos os sistemas, para as probas.
+// Escoita — números aleatorios iguais en todos os sistemas, para as probas dos plugins.
 // O estándar non fixa std::normal_distribution nin std::uniform_real_distribution:
 // libc++ (Mac), libstdc++ (Linux) e MSVC dan series distintas da mesma semente, e
 // as probas medían un sinal distinto en cada sistema. Estas só usan a saída de
