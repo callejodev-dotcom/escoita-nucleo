@@ -12,6 +12,7 @@ name: Plugin de Escoita
 #       permissions:
 #         contents: write   # para publicar a versión
 #
+# Unha serie (varios plugins nun repo e nun instalador) pon a lista en PLUGINS (produto.env).
 # O plugin pon: packaging/produto.env (os datos do produto), packaging/LEEME-mac.txt,
 # packaging/LEEME-windows.txt, packaging/NOTAS-VERSION.md e, se ten probas, tools/probas-ci.sh
 # (chámase con mac, windows, linux ou sanitizadores desde a raíz, coa compilación en build/).
@@ -51,6 +52,8 @@ jobs:
           { echo "NOME=$NOME"; echo "CURTO=$CURTO"; echo "AU=$AU"; echo "VER=$VER"; echo "NUCLEO=$RUNNER_TEMP/escoita-nucleo"; } >> "$GITHUB_ENV"
           git clone -q --depth 1 --branch "${{ inputs.juce }}" https://github.com/juce-framework/JUCE.git "$RUNNER_TEMP/JUCE"
           git clone -q --depth 1 --branch "$NUC" https://github.com/callejodev-dotcom/escoita-nucleo.git "$RUNNER_TEMP/escoita-nucleo"
+          bash "$RUNNER_TEMP/escoita-nucleo/empaquetado/plugins.sh" packaging/produto.env > "$RUNNER_TEMP/plugins.txt"
+          echo "PLUGINS_TXT=$RUNNER_TEMP/plugins.txt" >> "$GITHUB_ENV"
       - name: Compilar (universal)
         run: |
           set -o pipefail
@@ -63,8 +66,10 @@ jobs:
         run: |
           curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
           unzip -q pv.zip
-          ./pluginval.app/Contents/MacOS/pluginval --strictness-level 10 --validate-in-process --skip-gui-tests \
-            "build/${CURTO}_artefacts/Release/VST3/$NOME.vst3"
+          while IFS='|' read -r N T _; do
+            ./pluginval.app/Contents/MacOS/pluginval --strictness-level 10 --validate-in-process --skip-gui-tests \
+              "build/${T}_artefacts/Release/VST3/$N.vst3"
+          done < "$PLUGINS_TXT"
       - name: Certificado de Apple (só se está configurado)
         if: env.MACOS_CERT_P12 != ''
         run: |
@@ -77,14 +82,16 @@ jobs:
           security list-keychain -d user -s "$KC"
           security set-key-partition-list -S apple-tool:,apple: -k "" "$KC"
       - name: Empaquetar (.pkg e .zip)
-        run: bash "$NUCLEO/empaquetado/mac.sh" packaging/produto.env "build/${CURTO}_artefacts/Release" "$VER" dist
+        run: bash "$NUCLEO/empaquetado/mac.sh" packaging/produto.env build "$VER" dist
       - name: Validar o AU (auval)
-        if: env.AU != ''
         run: |
           mkdir -p ~/Library/Audio/Plug-Ins/Components
-          cp -R "build/${CURTO}_artefacts/Release/AU/$NOME.component" ~/Library/Audio/Plug-Ins/Components/
-          killall -9 AudioComponentRegistrar || true
-          auval -v $AU
+          while IFS='|' read -r N T A; do
+            if [ -z "$A" ]; then continue; fi
+            cp -R "build/${T}_artefacts/Release/AU/$N.component" ~/Library/Audio/Plug-Ins/Components/
+            killall -9 AudioComponentRegistrar || true
+            auval -v $A
+          done < "$PLUGINS_TXT"
       - uses: actions/upload-artifact@v4
         with:
           name: mac
@@ -107,6 +114,8 @@ jobs:
           { echo "NOME=$NOME"; echo "CURTO=$CURTO"; echo "WINDOWS_APPID=$WINDOWS_APPID"; echo "VER=$VER"; echo "JUCE=$T/JUCE"; echo "NUCLEO=$T/escoita-nucleo"; } >> "$GITHUB_ENV"
           git clone -q --depth 1 --branch "${{ inputs.juce }}" https://github.com/juce-framework/JUCE.git "$T/JUCE"
           git clone -q --depth 1 --branch "$NUC" https://github.com/callejodev-dotcom/escoita-nucleo.git "$T/escoita-nucleo"
+          bash "$T/escoita-nucleo/empaquetado/plugins.sh" packaging/produto.env > "$T/plugins.txt"
+          echo "PLUGINS_TXT=$T/plugins.txt" >> "$GITHUB_ENV"
       - name: Compilar
         run: |
           set -o pipefail
@@ -118,24 +127,38 @@ jobs:
         run: |
           curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip
           unzip -q pv.zip
-          ./pluginval.exe --strictness-level 10 --validate-in-process --skip-gui-tests \
-            "build/${CURTO}_artefacts/Release/VST3/$NOME.vst3"
+          while IFS='|' read -r N T _; do
+            ./pluginval.exe --strictness-level 10 --validate-in-process --skip-gui-tests \
+              "build/${T}_artefacts/Release/VST3/$N.vst3"
+          done < "$PLUGINS_TXT"
+      - name: Xuntar os plugins
+        run: |
+          # todo o que se instala, nunha carpeta: VST3, CLAP e a app (se a hai) de cada plugin
+          mkdir -p stage/VST3 stage/CLAP stage/Standalone
+          while IFS='|' read -r N T _; do
+            A="build/${T}_artefacts/Release"
+            cp -R "$A/VST3/$N.vst3" stage/VST3/
+            if [ -e "$A/CLAP/$N.clap" ]; then cp "$A/CLAP/$N.clap" stage/CLAP/; fi
+            if [ -e "$A/Standalone/$N.exe" ]; then cp "$A/Standalone/$N.exe" stage/Standalone/; fi
+          done < "$PLUGINS_TXT"
       - name: Instalador (Inno Setup, en galego)
         run: |
           choco upgrade innosetup -y --no-progress   # o galego precisa a 6.5 ou posterior
           ISCC="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
-          ART="$(cygpath -w "$PWD/build/${CURTO}_artefacts/Release")"
+          ART="$(cygpath -w "$PWD/stage")"
           OUT="$(cygpath -w "$PWD/dist")"
+          EXTRA=()
+          if ls stage/CLAP/*.clap > /dev/null 2>&1; then EXTRA+=("//DHaiClap"); fi
+          if [ -e "stage/Standalone/$NOME.exe" ]; then EXTRA+=("//DHaiApp"); fi
           "$ISCC" "//DNome=$NOME" "//DCurto=$CURTO" "//DAppId=$WINDOWS_APPID" "//DAppVersion=$VER" "//DArtDir=$ART" "//DOutDir=$OUT" \
-            "$(cygpath -w "$NUCLEO/empaquetado/windows.iss")"
+            "${EXTRA[@]}" "$(cygpath -w "$NUCLEO/empaquetado/windows.iss")"
       - name: Zip portátil
         run: |
-          A="build/${CURTO}_artefacts/Release"
           D="$CURTO-$VER-windows-x64"
           mkdir -p "$D"
-          cp -R "$A/VST3/$NOME.vst3" "$D/"
-          cp "$A/Standalone/$NOME.exe" "$D/"
-          if [ -e "$A/CLAP/$NOME.clap" ]; then cp "$A/CLAP/$NOME.clap" "$D/"; fi
+          cp -R stage/VST3/* "$D/"
+          if ls stage/CLAP/*.clap > /dev/null 2>&1; then cp stage/CLAP/*.clap "$D/"; fi
+          if ls stage/Standalone/*.exe > /dev/null 2>&1; then cp stage/Standalone/*.exe "$D/"; fi
           if [ -f packaging/LEEME-windows.txt ]; then cp packaging/LEEME-windows.txt "$D/LEEME.txt"; fi
           7z a -tzip "dist/$D.zip" "$D" > /dev/null
       - uses: actions/upload-artifact@v4
@@ -161,6 +184,8 @@ jobs:
           { echo "NOME=$NOME"; echo "CURTO=$CURTO"; echo "VER=$VER"; echo "NUCLEO=$RUNNER_TEMP/escoita-nucleo"; } >> "$GITHUB_ENV"
           git clone -q --depth 1 --branch "${{ inputs.juce }}" https://github.com/juce-framework/JUCE.git "$RUNNER_TEMP/JUCE"
           git clone -q --depth 1 --branch "$NUC" https://github.com/callejodev-dotcom/escoita-nucleo.git "$RUNNER_TEMP/escoita-nucleo"
+          bash "$RUNNER_TEMP/escoita-nucleo/empaquetado/plugins.sh" packaging/produto.env > "$RUNNER_TEMP/plugins.txt"
+          echo "PLUGINS_TXT=$RUNNER_TEMP/plugins.txt" >> "$GITHUB_ENV"
       - name: Compilar
         run: |
           set -o pipefail
@@ -173,18 +198,22 @@ jobs:
         run: |
           curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Linux.zip
           unzip -q pv.zip
-          xvfb-run -a ./pluginval --strictness-level 10 --validate-in-process \
-            "build/${CURTO}_artefacts/Release/VST3/$NOME.vst3"
+          while IFS='|' read -r N T _; do
+            xvfb-run -a ./pluginval --strictness-level 10 --validate-in-process \
+              "build/${T}_artefacts/Release/VST3/$N.vst3"
+          done < "$PLUGINS_TXT"
       - name: clap-validator (se hai CLAP)
         run: |
-          C="build/${CURTO}_artefacts/Release/CLAP/$NOME.clap"
-          if [ ! -e "$C" ]; then echo "(sen CLAP)"; exit 0; fi
+          if ! ls build/*_artefacts/Release/CLAP/*.clap > /dev/null 2>&1; then echo "(sen CLAP)"; exit 0; fi
           curl -sSL -o cv.zip https://github.com/free-audio/clap-validator/releases/download/0.4.1/clap-validator-0.4.1-127-g152b982-ubuntu-22.04.zip
           unzip -q cv.zip -d cv && (cd cv && for t in *.tar.gz; do [ -e "$t" ] && tar xzf "$t"; done; true)
           CV=$(find cv -name clap-validator -type f | head -1); chmod +x "$CV"
-          "$CV" validate "$C"
+          while IFS='|' read -r N T _; do
+            C="build/${T}_artefacts/Release/CLAP/$N.clap"
+            if [ -e "$C" ]; then "$CV" validate "$C"; fi
+          done < "$PLUGINS_TXT"
       - name: Empaquetar (.tar.gz)
-        run: bash "$NUCLEO/empaquetado/linux.sh" packaging/produto.env "build/${CURTO}_artefacts/Release" "$VER" dist
+        run: bash "$NUCLEO/empaquetado/linux.sh" packaging/produto.env build "$VER" dist
       - uses: actions/upload-artifact@v4
         with:
           name: linux
@@ -216,7 +245,11 @@ jobs:
 
   publicar:
     name: Publicar versión
-    if: startsWith(github.ref, 'refs/tags/v') && !failure() && !cancelled()
+    # só se todo foi ben: un traballo sen máquina queda «cancelado» (non «fallado») e publicaría a medias
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') && !cancelled() &&
+      needs.mac.result == 'success' && needs.windows.result == 'success' && needs.linux.result == 'success' &&
+      (needs.sanitizadores.result == 'success' || needs.sanitizadores.result == 'skipped')
     needs: [mac, windows, linux, sanitizadores]
     runs-on: ubuntu-latest
     permissions:

@@ -83,6 +83,14 @@ E no plugin:
   AU="aumf Btun Esco"            # tipo, subtipo e fabricante, para auval (baleiro: sen AU)
   WINDOWS_APPID="3D8E1F6A-5B2C-4E7D-A9F0-7C6B5A4D3E21"   # GUID propio, sen chaves; non cambialo nunca
   ```
+  Unha **serie** (varios plugins nun repo e nun só instalador, coma Barullo Enxebres) pon ademais
+  a lista dos plugins, un por liña «Nome|Destino de CMake|AU». `NOME` e `CURTO` son entón os do
+  paquete (o instalador, os ficheiros e o `project()` de CMake, que leva a versión):
+  ```sh
+  PLUGINS="Barullo Filtro|BarulloFiltro|aufx Bfil Esco
+  Barullo Chorus|BarulloChorus|aufx Bcho Esco"
+  ```
+  Unha serie pode ir sen aplicación independente: o instalador só leva o que haxa.
 - `packaging/LEEME-mac.txt`, `packaging/LEEME-windows.txt` e `packaging/NOTAS-VERSION.md` (o texto da versión publicada).
 - `tools/probas-ci.sh` (opcional): as probas do plugin. Chámase desde a raíz con `mac`, `windows`, `linux` ou `sanitizadores`; a compilación está en `build/` (en `build/<Destino>_artefacts/Release/`, ou `RelWithDebInfo` cos sanitizadores).
 - As opcións de CMake `BARULLO_TESTS`, `BARULLO_WERROR` e `BARULLO_SANITIZE`, se as ten.

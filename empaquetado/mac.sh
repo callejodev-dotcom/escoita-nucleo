@@ -1,9 +1,10 @@
 #!/bin/bash
-# Empaqueta un plugin de Escoita para Mac: un instalador .pkg (universal: Apple Silicon + Intel)
-# e un .zip cos bundles soltos.
-# Uso: mac.sh <produto.env> <carpeta de artefactos Release> <versión> <carpeta de saída>
+# Empaqueta un plugin de Escoita (ou unha serie de plugins) para Mac: un instalador .pkg
+# (universal: Apple Silicon + Intel) e un .zip cos bundles soltos.
+# Uso: mac.sh <produto.env> <carpeta da compilación> <versión> <carpeta de saída>
 #
-# produto.env (no plugin, xunto ao LEEME-mac.txt) di NOME, CURTO e ID; ver o LEEME do núcleo.
+# produto.env (no plugin, xunto ao LEEME-mac.txt) di NOME, CURTO e ID e, nunha serie, PLUGINS;
+# ver o LEEME do núcleo. Os artefactos de cada plugin están en <compilación>/<Destino>_artefacts/Release.
 # Firma: con estas variables de contorno, firma co teu certificado de Apple e notariza (ábrese
 # sen avisos); se non, firma «ad hoc» (funciona, pero macOS avisa a primeira vez):
 #   MACOS_DEV_ID         "Developer ID Application: Nome (EQUIPO)"
@@ -11,9 +12,8 @@
 #   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD   (para notarizar)
 set -eo pipefail
 trap 'echo "::error::$(basename "$0") liña $LINENO: $BASH_COMMAND"' ERR
-PRODUTO="$1"; ART="$2"; VER="$3"; OUT="$4"
+PRODUTO="$1"; BUILD="$2"; VER="$3"; OUT="$4"
 source "$PRODUTO"
-NAME="$NOME"
 DOCS="$(cd "$(dirname "$PRODUTO")" && pwd)"
 mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"   # ruta absoluta: o .zip faise desde outra carpeta
@@ -21,18 +21,23 @@ WORK="$(mktemp -d)"
 ROOT="$WORK/root"
 P="$ROOT/Library/Audio/Plug-Ins"
 mkdir -p "$P/VST3" "$P/Components" "$P/CLAP" "$ROOT/Applications"
-cp -R "$ART/VST3/$NAME.vst3" "$P/VST3/"
-[ -d "$ART/AU/$NAME.component" ] && cp -R "$ART/AU/$NAME.component" "$P/Components/"
-[ -d "$ART/CLAP/$NAME.clap" ] && cp -R "$ART/CLAP/$NAME.clap" "$P/CLAP/"
-cp -R "$ART/Standalone/$NAME.app" "$ROOT/Applications/"
-rmdir "$P/Components" "$P/CLAP" 2>/dev/null || true
-
-# comprobar que é universal
-lipo -info "$ROOT/Applications/$NAME.app/Contents/MacOS/$NAME"
+bash "$(dirname "$0")/plugins.sh" "$PRODUTO" > "$WORK/plugins.txt"
+while IFS='|' read -r N T _; do
+  A="$BUILD/${T}_artefacts/Release"
+  cp -R "$A/VST3/$N.vst3" "$P/VST3/"
+  if [ -d "$A/AU/$N.component" ]; then cp -R "$A/AU/$N.component" "$P/Components/"; fi
+  if [ -d "$A/CLAP/$N.clap" ]; then cp -R "$A/CLAP/$N.clap" "$P/CLAP/"; fi
+  if [ -d "$A/Standalone/$N.app" ]; then cp -R "$A/Standalone/$N.app" "$ROOT/Applications/"; fi
+  lipo -info "$P/VST3/$N.vst3/Contents/MacOS/$N"   # comprobar que é universal
+done < "$WORK/plugins.txt"
+rmdir "$P/Components" "$P/CLAP" "$ROOT/Applications" 2>/dev/null || true
 
 SIGN_ID="${MACOS_DEV_ID:--}"
-for b in "$P/VST3/$NAME.vst3" "$P/Components/$NAME.component" "$P/CLAP/$NAME.clap" "$ROOT/Applications/$NAME.app"; do
-  [ -e "$b" ] || continue
+BUNDLES=()
+for b in "$P"/VST3/*.vst3 "$P"/Components/*.component "$P"/CLAP/*.clap "$ROOT"/Applications/*.app; do
+  if [ -e "$b" ]; then BUNDLES+=("$b"); fi
+done
+for b in "${BUNDLES[@]}"; do
   if [ "$SIGN_ID" = "-" ]; then
     codesign --force --deep --sign - "$b"
   else
@@ -67,9 +72,7 @@ fi
 # .zip cos bundles soltos, para quen prefira copialos á man
 ZIPDIR="$WORK/$CURTO-$VER-mac"
 mkdir -p "$ZIPDIR"
-for b in "$P/VST3/$NAME.vst3" "$P/Components/$NAME.component" "$P/CLAP/$NAME.clap" "$ROOT/Applications/$NAME.app"; do
-  [ -e "$b" ] && cp -R "$b" "$ZIPDIR/"
-done
-[ -f "$DOCS/LEEME-mac.txt" ] && cp "$DOCS/LEEME-mac.txt" "$ZIPDIR/LEEME.txt"
+for b in "${BUNDLES[@]}"; do cp -R "$b" "$ZIPDIR/"; done
+if [ -f "$DOCS/LEEME-mac.txt" ]; then cp "$DOCS/LEEME-mac.txt" "$ZIPDIR/LEEME.txt"; fi
 (cd "$WORK" && ditto -c -k --sequesterRsrc --keepParent "$CURTO-$VER-mac" "$OUT/$CURTO-$VER-mac.zip")
 echo "Feito: $PKG e $OUT/$CURTO-$VER-mac.zip"
