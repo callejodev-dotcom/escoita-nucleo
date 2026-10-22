@@ -84,9 +84,9 @@ E no plugin:
   WINDOWS_APPID="3D8E1F6A-5B2C-4E7D-A9F0-7C6B5A4D3E21"   # GUID propio, sen chaves; non cambialo nunca
   ```
   Unha **serie** (varios plugins nun repo e nun só instalador, coma Barullo Enxebres) pon ademais
-  a lista dos plugins, un por liña «Nome dos ficheiros|Destino de CMake|AU» (o nome dos bundles,
-  sen tiles: o `codesign` de Apple e o cargador de VST3 trabúcanse con eles; o nome que se ve no
-  DAW pode levalos, con `PLUGIN_NAME` en `juce_add_plugin`). `NOME` e `CURTO` son entón os do
+  a lista dos plugins, un por liña «Nome|Destino de CMake|AU» (os nomes, sen tiles: JUCE 8
+  escríbeos mal no VST3, que entón non se carga, e o `codesign` de Apple rompe con eles nos
+  ficheiros). `NOME` e `CURTO` son entón os do
   paquete (o instalador, os ficheiros e o `project()` de CMake, que leva a versión):
   ```sh
   PLUGINS="Barullo Filtro|BarulloFiltro|aufx Bfil Esco
