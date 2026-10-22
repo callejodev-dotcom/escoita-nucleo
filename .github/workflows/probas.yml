@@ -14,7 +14,7 @@ jobs:
       matrix:
         include:
           - { nome: Mac, os: macos-14, xerador: Xcode, exe: "" }
-          - { nome: Windows, os: windows-latest, xerador: "Visual Studio 17 2022", exe: ".exe" }
+          - { nome: Windows, os: windows-latest, xerador: "", exe: ".exe" }   # o Visual Studio que haxa
           - { nome: Linux, os: ubuntu-22.04, xerador: Ninja, exe: "" }
     runs-on: ${{ matrix.os }}
     defaults:
@@ -24,13 +24,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Dependencias (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y ninja-build libfreetype6-dev libfontconfig1-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev \
+            libxcomposite-dev libxext-dev libfreetype6-dev libfontconfig1-dev ninja-build
       - name: JUCE
         run: git clone -q --depth 1 --branch 8.0.4 https://github.com/juce-framework/JUCE.git "$(cygpath -m "$RUNNER_TEMP" 2>/dev/null || echo "$RUNNER_TEMP")/JUCE"
       - name: Compilar
         run: |
           T="$(cygpath -m "$RUNNER_TEMP" 2>/dev/null || echo "$RUNNER_TEMP")"
-          cmake -S probas -B build -G "${{ matrix.xerador }}" -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR="$T/JUCE"
+          if [ -n "${{ matrix.xerador }}" ]; then G=(-G "${{ matrix.xerador }}"); else G=(-A x64); fi
+          cmake -S probas -B build "${G[@]}" -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR="$T/JUCE"
           cmake --build build --config Release
       - name: Probas
         run: ./build/ProbaNucleo_artefacts/Release/ProbaNucleo${{ matrix.exe }}
