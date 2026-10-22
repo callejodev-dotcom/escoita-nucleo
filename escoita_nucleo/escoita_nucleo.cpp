@@ -16,3 +16,5 @@
 
 #include "texto/escoita_Texto.cpp"
 #include "actualizacions/escoita_Actualizacions.cpp"
+#include "estado/escoita_Estado.cpp"
+#include "midi/escoita_Midi.cpp"

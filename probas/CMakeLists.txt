@@ -25,7 +25,7 @@ foreach(destino ProbaNucleo ProbaNucleoRede)
   juce_generate_juce_header(${destino})
   target_sources(${destino} PRIVATE ProbaNucleo.cpp)
   target_compile_definitions(${destino} PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
-  target_link_libraries(${destino} PRIVATE juce::juce_core juce::juce_data_structures
+  target_link_libraries(${destino} PRIVATE juce::juce_core juce::juce_data_structures juce::juce_audio_basics juce::juce_audio_processors juce::juce_gui_basics
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
   if(MSVC)
     target_compile_options(${destino} PRIVATE /utf-8)
