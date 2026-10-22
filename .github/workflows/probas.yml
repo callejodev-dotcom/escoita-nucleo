@@ -38,5 +38,9 @@ jobs:
           cmake --build build --config Release
       - name: Probas
         run: ./build/ProbaNucleo_artefacts/Release/ProbaNucleo${{ matrix.exe }}
+      - name: Aviso das versións, de verdade (Linux, co curl do sistema)
+        if: runner.os == 'Linux'
+        continue-on-error: true   # (depende da rede e do límite da API de GitHub)
+        run: ./build/ProbaNucleoRede_artefacts/Release/ProbaNucleoRede --rede
       - name: Empaquetado (sintaxe)
         run: bash -n empaquetado/mac.sh && bash -n empaquetado/linux.sh

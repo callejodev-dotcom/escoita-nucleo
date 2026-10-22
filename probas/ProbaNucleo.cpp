@@ -12,7 +12,7 @@ int main (int argc, char** argv)
         juce::SharedResourcePointer<Actualizacions> a;
         for (int i = 0; i < 100 && a->newVersion().isEmpty(); ++i) juce::Thread::sleep (100);
         std::printf ("versión nova: «%s» (esta é a %s)\n", a->newVersion().toRawUTF8(), Actualizacions::currentVersion().toRawUTF8());
-        return 0;
+        return a->newVersion().isEmpty() ? 1 : 0;
     }
 
     int fallos = 0;
@@ -183,6 +183,17 @@ int main (int argc, char** argv)
         p.undo.redo(); p.undo.redo();
         const bool d3 = extra == 42 && std::abs (vol() - 4.0f) < 1e-4f;
         proba ("estado: desfacer e refacer (parámetros e estado propio)", d1 && d2 && d3);
+    }
+    // ---- o mando ao que se lle escribe o valor
+    {
+        juce::AudioParameterFloat prm (juce::ParameterID { "ganancia", 1 }, "Ganancia", juce::NormalisableRange<float> (-24.0f, 24.0f, 0.1f), 0.0f,
+                                       juce::AudioParameterFloatAttributes().withLabel ("dB"));
+        MandoEditable m;
+        m.param = &prm;
+        m.setRange (-24.0, 24.0, 0.1);
+        const bool ok = m.aplicarTexto (U ("−3,5 dB")) && std::abs (m.getValue() + 3.5) < 1e-6 && ! m.aplicarTexto ("  ")
+                        && m.aplicarTexto ("12") && std::abs (m.getValue() - 12.0) < 1e-6;
+        proba ("mando: escribir o valor (coma, menos de verdade, unidades)", ok);
     }
    #if ESCOITA_SEN_REDE
     {

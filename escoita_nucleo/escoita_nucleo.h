@@ -3,7 +3,7 @@
 
   ID:                 escoita_nucleo
   vendor:             escoita
-  version:            0.2.0
+  version:            0.3.0
   name:               Nucleo comun dos plugins de Escoita
   description:        Texto en galego, aviso das versions novas, presets propios, A/B e desfacer, MIDI para sintes e limitador
   website:            https://www.escoita.link
@@ -24,6 +24,7 @@
 //   midi/            Sostido (o pedal), escollerVoz() e Voces (reparto de voces), MPE
 //                    (escoita_Voces.h vai sen JUCE: os motores sen JUCE poden incluílo só)
 //   audio/           Teito: limitador de seguridade (sen JUCE tamén)
+//   ui/              MandoEditable: un mando ao que se lle escribe o valor e que se move fino
 //
 // Cada destino que o use debe definir (escoita_produto() en CMake failo só):
 //   ESCOITA_PRODUTO   o nome («Barullo Tune»)
@@ -44,3 +45,4 @@
 #include "estado/escoita_Estado.h"
 #include "midi/escoita_Midi.h"
 #include "audio/escoita_Teito.h"
+#include "ui/escoita_MandoEditable.h"

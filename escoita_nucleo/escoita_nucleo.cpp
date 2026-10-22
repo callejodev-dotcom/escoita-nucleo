@@ -18,3 +18,4 @@
 #include "actualizacions/escoita_Actualizacions.cpp"
 #include "estado/escoita_Estado.cpp"
 #include "midi/escoita_Midi.cpp"
+#include "ui/escoita_MandoEditable.cpp"

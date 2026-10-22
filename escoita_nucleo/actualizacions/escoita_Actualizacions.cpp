@@ -38,6 +38,7 @@ Actualizacions::~Actualizacions()
     {
         const juce::ScopedLock sl (lock);
         if (stream != nullptr) stream->cancel();
+        if (programa != nullptr) programa->kill();
     }
     stopThread (10000);
 }
@@ -75,21 +76,45 @@ void Actualizacions::startIfDue()
 
 void Actualizacions::run()
 {
+    const juce::String url ("https://api.github.com/repos/" ESCOITA_REPO "/releases/latest");
+    const auto axente = juce::String (ESCOITA_PRODUTO).removeCharacters (" ") + "/" ESCOITA_VERSION;
+    juce::String text;
+   #if JUCE_LINUX && ! JUCE_USE_CURL
+    // Linux: JUCE vai sen curl (e GitHub só fala https), así que se lle pide ao programa curl
+    // do sistema, ou ao wget; se non hai ningún, non se avisa
+    for (const auto& orde : { juce::StringArray { "curl", "-fsSL", "--max-time", "8", "-H", "Accept: application/vnd.github+json", "-A", axente, url },
+                              juce::StringArray { "wget", "-qO-", "--timeout=8", "--header=Accept: application/vnd.github+json", "--user-agent=" + axente, url } })
+    {
+        {
+            const juce::ScopedLock sl (lock);
+            if (threadShouldExit()) return;
+            programa = std::make_unique<juce::ChildProcess>();
+            if (! programa->start (orde, juce::ChildProcess::wantStdOut)) { programa.reset(); continue; }
+        }
+        text = programa->readAllProcessOutput();
+        const bool ok = programa->waitForProcessToFinish (10000) && programa->getExitCode() == 0;
+        {
+            const juce::ScopedLock sl (lock);
+            programa.reset();
+        }
+        if (ok && text.isNotEmpty()) break;
+        text.clear();
+    }
+   #else
     {
         const juce::ScopedLock sl (lock);
         if (threadShouldExit()) return;
-        stream = std::make_unique<juce::WebInputStream> (juce::URL ("https://api.github.com/repos/" ESCOITA_REPO "/releases/latest"), false);
-        stream->withExtraHeaders (juce::String ("Accept: application/vnd.github+json\r\nUser-Agent: ")
-                                  + juce::String (ESCOITA_PRODUTO).removeCharacters (" ") + "/" ESCOITA_VERSION)
+        stream = std::make_unique<juce::WebInputStream> (juce::URL (url), false);
+        stream->withExtraHeaders ("Accept: application/vnd.github+json\r\nUser-Agent: " + axente)
                .withConnectionTimeout (8000);
     }
-    juce::String text;
     if (stream->connect (nullptr) && stream->getStatusCode() == 200 && ! threadShouldExit())
         text = stream->readEntireStreamAsString();
     {
         const juce::ScopedLock sl (lock);
         stream.reset();
     }
+   #endif
     // sen rede ou sen resposta: nada (volverase preguntar a próxima vez)
     const auto tag = juce::JSON::parse (text).getProperty ("tag_name", {}).toString().trim().trimCharactersAtStart ("vV");
     if (threadShouldExit() || tag.isEmpty()) return;

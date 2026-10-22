@@ -8,10 +8,11 @@ O núcleo común dos plugins de [Escoita](https://www.escoita.link): Barullo Tun
 |---|---|
 | `escoita_nucleo/` | Módulo de JUCE (`escoita::`) |
 | ↳ `texto/` | `U()` (literais UTF-8), `maiusculas()` (tamén con acentos: o sistema non sempre as sabe), `numero()` (coma decimal e −), `textoDeBytes()` e `lerTexto()` (texto de fóra en UTF-8 ou Latin-1, nunca inválido) |
-| ↳ `actualizacions/` | `Actualizacions`: unha vez ao día pregunta a GitHub cal é a última versión do produto (sen mandar datos) e di se hai unha nova. O plugin debuxa o aviso ao seu xeito e deixa desactivalo |
+| ↳ `actualizacions/` | `Actualizacions`: unha vez ao día pregunta a GitHub cal é a última versión do produto (sen mandar datos) e di se hai unha nova (en Linux, co programa curl ou wget do sistema). O plugin debuxa o aviso ao seu xeito e deixa desactivalo |
 | ↳ `estado/` | `Estado`: presets propios (ficheiros XML en Documentos/<produto>/Presets), A/B e desfacer, sobre o APVTS. Os sintes engaden o estado que non é parámetro (sons editados, memoria) con `extra`/`aplicarExtra`, e os seus cambios desfanse con `cambio()`. `engadirAoMenu()` e `gardarComo()` poñen as entradas nun menú (cada plugin co seu aspecto) |
 | ↳ `midi/` | `Sostido` (o pedal de sostemento entre o MIDI e o motor), `escollerVoz()` e `Voces` (reparto: a libre que leva máis tempo libre, se non a que leva máis tempo tocando; ou rotando, coma os Juno) e `MPE` (bend, presión e CC74 por canle, coa mestra; rango do bend por RPN e configuración MPE) |
 | ↳ `audio/` | `Teito`: limitador de seguridade (−1 dBFS, ataque instantáneo, sen latencia) |
+| ↳ `ui/` | `MandoEditable`: un mando (calquera juce::Slider) ligado a un parámetro ao que se lle escribe o valor coma no DAW (clic dereito, Cmd/Ctrl-clic ou intro) e que se move fino con maiúsculas; o aspecto é o de cada plugin |
 | `CMakeLists.txt` | Engade o módulo e a función `escoita_produto()` |
 | `.github/workflows/plugin.yml` | A CI común: Mac universal, Windows e Linux; probas do plugin, pluginval, auval, clap-validator, empaquetado e publicación ao etiquetar |
 | `empaquetado/` | `mac.sh` (.pkg e .zip), `linux.sh` (.tar.gz con instalador), `windows.iss` (Inno Setup en galego, con `Galician.isl`) |
