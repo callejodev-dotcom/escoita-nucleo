@@ -1,0 +1,38 @@
+name: Probas do núcleo
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  probas:
+    name: ${{ matrix.nome }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { nome: Mac, os: macos-14, xerador: Xcode, exe: "" }
+          - { nome: Windows, os: windows-latest, xerador: "Visual Studio 17 2022", exe: ".exe" }
+          - { nome: Linux, os: ubuntu-22.04, xerador: Ninja, exe: "" }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencias (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libfreetype6-dev libfontconfig1-dev
+      - name: JUCE
+        run: git clone -q --depth 1 --branch 8.0.4 https://github.com/juce-framework/JUCE.git "$(cygpath -m "$RUNNER_TEMP" 2>/dev/null || echo "$RUNNER_TEMP")/JUCE"
+      - name: Compilar
+        run: |
+          T="$(cygpath -m "$RUNNER_TEMP" 2>/dev/null || echo "$RUNNER_TEMP")"
+          cmake -S probas -B build -G "${{ matrix.xerador }}" -DCMAKE_BUILD_TYPE=Release -DJUCE_DIR="$T/JUCE"
+          cmake --build build --config Release
+      - name: Probas
+        run: ./build/ProbaNucleo_artefacts/Release/ProbaNucleo${{ matrix.exe }}
+      - name: Empaquetado (sintaxe)
+        run: bash -n empaquetado/mac.sh && bash -n empaquetado/linux.sh
