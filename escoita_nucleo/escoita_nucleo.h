@@ -22,7 +22,8 @@
 //   actualizacions/  Actualizacions: o aviso das versións novas
 //   estado/          Estado: presets propios, A/B e desfacer
 //   midi/            Sostido (o pedal), escollerVoz() e Voces (reparto de voces), MPE
-//   audio/           Teito: limitador de seguridade
+//                    (escoita_Voces.h vai sen JUCE: os motores sen JUCE poden incluílo só)
+//   audio/           Teito: limitador de seguridade (sen JUCE tamén)
 //
 // Cada destino que o use debe definir (escoita_produto() en CMake failo só):
 //   ESCOITA_PRODUTO   o nome («Barullo Tune»)

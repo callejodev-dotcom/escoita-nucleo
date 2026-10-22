@@ -1,7 +1,10 @@
 #pragma once
+#include <algorithm>
+#include <cmath>
 
 // Limitador de seguridade: a saída nunca pasa do teito. Ataque instantáneo (o pico de agora
-// xa se limita) e sen anticipación (non engade latencia); solta en «soltar» segundos.
+// xa se limita) e sen anticipación (non engade latencia); solta en «soltar» segundos. Sen
+// JUCE: pódese incluír só (os motores sen JUCE).
 namespace escoita
 {
     class Teito
