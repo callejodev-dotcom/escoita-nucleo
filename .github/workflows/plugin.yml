@@ -7,7 +7,7 @@ name: Plugin de Escoita
 #   on: { push: { branches: ["**"], tags: ["v*"] }, workflow_dispatch: }
 #   jobs:
 #     plugin:
-#       uses: callejodev-dotcom/escoita-nucleo/.github/workflows/plugin.yml@v0.1.0
+#       uses: callejodev-dotcom/escoita-nucleo/.github/workflows/plugin.yml@v0.2.0
 #       secrets: inherit
 #       permissions:
 #         contents: write   # para publicar a versión

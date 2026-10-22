@@ -26,7 +26,7 @@ No `CMakeLists.txt`, despois de JUCE:
 ```cmake
 # Núcleo común de Escoita: a versión fixada ou, se existe, a carpeta irmá ../escoita-nucleo
 # (para traballar no núcleo e probalo nos plugins á vez); tamén -DESCOITA_NUCLEO=<carpeta>
-set(ESCOITA_NUCLEO_VERSION "v0.1.0")
+set(ESCOITA_NUCLEO_VERSION "v0.2.0")
 if(NOT ESCOITA_NUCLEO AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../escoita-nucleo/escoita_nucleo")
   set(ESCOITA_NUCLEO "${CMAKE_CURRENT_SOURCE_DIR}/../escoita-nucleo")
 endif()
@@ -62,7 +62,7 @@ on:
   workflow_dispatch:
 jobs:
   plugin:
-    uses: callejodev-dotcom/escoita-nucleo/.github/workflows/plugin.yml@v0.1.0
+    uses: callejodev-dotcom/escoita-nucleo/.github/workflows/plugin.yml@v0.2.0
     secrets: inherit
     permissions:
       contents: write
