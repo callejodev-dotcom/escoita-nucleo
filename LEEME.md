@@ -101,7 +101,7 @@ escoita::Estado estado { params, &undo, [] { escoita::Estado::Opcions o; o.exten
 
 1. Clona `escoita-nucleo` ao lado dos plugins (`~/…/escoita-nucleo` xunto a `~/…/barullotune`): os plugins colleno só ao compilar en local.
 2. Cambia, proba aquí (`cmake -S probas -B build && cmake --build build && build/ProbaNucleo_artefacts/Release/ProbaNucleo`) e nos plugins.
-3. Sobe a versión en `escoita_nucleo/escoita_nucleo.h`, etiqueta (`git tag v0.2.0 && git push origin v0.2.0`).
+3. Sobe a versión en `escoita_nucleo/escoita_nucleo.h`, etiqueta (`git tag v0.3.0 && git push origin v0.3.0`).
 4. En cada plugin, cando queiras: `ESCOITA_NUCLEO_VERSION` e o `@v…` do workflow á versión nova. A súa CI dirá se todo segue ben.
 
 ## Licenza
