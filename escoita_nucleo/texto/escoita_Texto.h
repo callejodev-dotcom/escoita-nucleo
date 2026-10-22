@@ -20,4 +20,13 @@ namespace escoita
 
     // un ficheiro de texto pequeno (por riba de «maximo» bytes, nada: non é noso)
     juce::String lerTexto (const juce::File&, juce::int64 maximo = 4 * 1024 * 1024);
+
+    // o texto dun valor que escribe o DAW: o envoltorio de CLAP pasa char* e JUCE leo coma se
+    // fose ASCII, así que «Unísono» ou «−» chegan byte a byte. Recompónse en UTF-8; o que xa
+    // vén ben queda coma está.
+    juce::String textoDoDAW (const juce::String&);
+
+    // un AudioParameterChoice que le ben o texto do DAW (CLAP incluído): a opción co mesmo
+    // texto (sen mirar maiúsculas) ou, se non, o número de opción
+    juce::AudioParameterChoiceAttributes atributosEleccion (const juce::StringArray& opcions);
 }
