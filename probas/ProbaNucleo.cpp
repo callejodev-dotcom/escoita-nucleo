@@ -53,8 +53,8 @@ int main (int argc, char** argv)
     {
         // nas probas non se sae á rede: sen ESCOITA_NOVA_VERSION non hai versión nova
         juce::SharedResourcePointer<Actualizacions> a;
-        const auto v = std::getenv ("ESCOITA_NOVA_VERSION");
-        proba ("aviso das versións: sen rede nas probas", v != nullptr ? a->newVersion() == juce::String (v) : a->newVersion().isEmpty());
+        const auto v = juce::SystemStats::getEnvironmentVariable ("ESCOITA_NOVA_VERSION", {});
+        proba ("aviso das versións: sen rede nas probas", a->newVersion() == (versionNova (v, ESCOITA_VERSION) ? v : juce::String()));
     }
    #endif
     std::printf (fallos == 0 ? "TODO OK\n" : "%d FALLOS\n", fallos);

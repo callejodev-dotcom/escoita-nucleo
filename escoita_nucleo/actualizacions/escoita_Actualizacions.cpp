@@ -19,7 +19,7 @@ Actualizacions::Actualizacions() : juce::Thread (ESCOITA_PRODUTO ": versions")
 {
    #if defined (ESCOITA_SEN_REDE) && ESCOITA_SEN_REDE
     // nas probas non se sae á rede nin se tocan os axustes; ESCOITA_NOVA_VERSION finxe unha versión nova
-    if (auto* v = std::getenv ("ESCOITA_NOVA_VERSION")) latest = v;
+    latest = juce::SystemStats::getEnvironmentVariable ("ESCOITA_NOVA_VERSION", {});
    #else
     juce::PropertiesFile::Options o;
     o.applicationName = ESCOITA_PRODUTO;
