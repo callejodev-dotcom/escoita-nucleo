@@ -3,7 +3,7 @@
 
   ID:                 escoita_nucleo
   vendor:             escoita
-  version:            0.4.0
+  version:            0.5.0
   name:               Nucleo comun dos plugins de Escoita
   description:        Texto en galego, aviso das versions novas, presets propios, A/B e desfacer, MIDI para sintes e limitador
   website:            https://www.escoita.link

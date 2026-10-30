@@ -107,6 +107,46 @@ int main (int argc, char** argv)
         proba ("teito: nunca pasa de −1 dBFS e non toca o que vai baixo",
                maxi <= 0.891 + 1e-12 && juce::exactlyEqual (baixo, 0.5) && std::abs (l - 0.891) < 1e-12 && std::abs (r + 0.4455) < 1e-12);
     }
+    // ---- o teito con anticipación: nunca pasa, non distorsiona nos graves, é transparente e o atraso coincide
+    {
+        auto thd = [] (const std::vector<double>& y, double f, int desde)
+        {
+            double s = 0, c = 0, e = 0; int k = 0;
+            for (int i = desde; i < (int) y.size(); ++i)
+            {
+                const double a = 2.0 * juce::MathConstants<double>::pi * f * i / 48000.0;
+                s += y[(size_t) i] * std::sin (a); c += y[(size_t) i] * std::cos (a); e += y[(size_t) i] * y[(size_t) i]; ++k;
+            }
+            const double fund = 2.0 * (s * s + c * c) / k;
+            return 10.0 * std::log10 ((e - fund) / fund + 1e-30);
+        };
+        bool nunca = true; double peorAnt = -200, peorSen = -200;
+        for (double f : { 45.0, 100.0, 1000.0 })
+            for (double ant : { 0.0, 0.0015 })
+            {
+                Teito t; t.preparar (48000.0, 0.080, 0.891, ant);
+                std::vector<double> y;
+                for (int i = 0; i < 24000; ++i)
+                {
+                    double l = 2.5 * std::sin (2.0 * juce::MathConstants<double>::pi * f * i / 48000.0), r = -0.5 * l;
+                    t.procesar (l, r);
+                    nunca = nunca && std::abs (l) <= 0.891 + 1e-12 && std::abs (r) <= 0.891 + 1e-12;
+                    y.push_back (l);
+                }
+                (ant > 0 ? peorAnt : peorSen) = std::max (ant > 0 ? peorAnt : peorSen, thd (y, f, 12000));
+            }
+        Teito t; t.preparar (48000.0, 0.080, 0.891, 0.0015);
+        Atraso a; a.preparar (t.latencia());
+        bool igual = t.latencia() == 72;
+        juce::Random rnd (3);
+        for (int i = 0; i < 2000; ++i) { const double x = rnd.nextDouble() - 0.5; igual = igual && juce::exactlyEqual (t.procesar (x), a.procesar (x)); }
+        for (int i = 0; i < 200; ++i) { t.procesar (4.0); a.procesar (4.0); }
+        bool volta = true;
+        for (int i = 0; i < 3 * 48000; ++i) { const double x = 0.4 * (rnd.nextDouble() - 0.5), y = t.procesar (x), z = a.procesar (x); if (i > 2 * 48000) volta = volta && juce::exactlyEqual (y, z); }
+        proba ("teito con anticipación: nunca pasa, sen distorsión nos graves, transparente e á par do atraso",
+               nunca && peorAnt < -90.0 && peorSen > -40.0 && igual && volta);
+        std::printf ("   (distorsión a +8 dB: %.0f dB sen anticipación, %.0f dB con 1,5 ms)\n", peorSen, peorAnt);
+    }
     // ---- presets propios, A/B e desfacer
     {
         struct Proc : juce::AudioProcessor
