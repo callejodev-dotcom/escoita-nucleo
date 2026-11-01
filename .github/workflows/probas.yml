@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { nome: Mac, os: macos-14, xerador: Xcode, exe: "" }
+          - { nome: Mac, os: macos-15, xerador: Xcode, exe: "" }
           - { nome: Windows, os: windows-latest, xerador: "", exe: ".exe" }   # o Visual Studio que haxa
           - { nome: Linux, os: ubuntu-22.04, xerador: Ninja, exe: "" }
     runs-on: ${{ matrix.os }}
